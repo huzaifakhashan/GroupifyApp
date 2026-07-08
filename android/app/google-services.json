@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "531940292235",
+    "project_id": "groupify-app-a0f42",
+    "storage_bucket": "groupify-app-a0f42.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:531940292235:android:21bfc972a5d6991db3468e",
+        "android_client_info": {
+          "package_name": "com.example.groupify_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmqb5D1m6J5cWg8VgQDw8afq9O4Yq6xHg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
