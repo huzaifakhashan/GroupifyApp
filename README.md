@@ -37,3 +37,8 @@ _Add screenshots of the application here._
 1. Clone the repository:
    ```bash
    git clone YOUR_REPOSITORY_URL
+
+
+## 📥 Download the App
+
+👉 [Download Groupify APK](https://drive.google.com/file/d/1zTZCXQfKKybumi0WsCXZQseoG0oIAYjY/view?usp=drive_link)
