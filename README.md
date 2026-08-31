@@ -20,9 +20,6 @@ Groupify allows users to communicate and exchange messages in real time. Data is
 - Firebase Storage
 - Firebase Cloud Messaging
 
-## 📸 Screenshots
-
-_Add screenshots of the application here._
 
 ## 🚀 Getting Started
 
