@@ -1,14 +1,17 @@
 # 📱 Groupify App
 
-A modern chat and instant messaging application built with **Flutter** and **Firebase**.
+A real-time chat and instant messaging application built with Flutter and Firebase.
 
-Groupify allows users to communicate and exchange messages in real time. Data is stored securely in the cloud using **Firebase Firestore**, with authentication through **Firebase Auth**, push notifications via **Firebase Messaging**, and image/file sharing using **Firebase Storage**.
+Groupify is a modern chat application that allows users to create accounts and communicate with other users in real time. Users can register and use their accounts to send and receive messages, including accounts created with non-real or anonymous profile information.
+
+Messages and user data are stored in the cloud using Firebase Firestore, authentication is handled through Firebase Authentication, and real-time push notifications are provided using Firebase Cloud Messaging. The application also supports image and file sharing through Firebase Storage.
 
 ## ✨ Features
 
-- 🔐 Secure authentication with Firebase Auth
+- 🔐 User registration and authentication with Firebase Auth
 - 💬 Real-time and smooth messaging
 - 🖼️ Image and file sharing
+- 👤 User profiles and account creation
 - 🎨 Modern and user-friendly UI
 
 ## 🛠️ Technologies
