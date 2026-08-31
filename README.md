@@ -33,9 +33,9 @@ Groupify allows users to communicate and exchange messages in real time. Data is
 
 1. Clone the repository:
    ```bash
-   [git clone YOUR_REPOSITORY_URL](https://github.com/huzaifakhashan/GroupifyApp/releases/tag/v1.0.0)
+   [git clone YOUR_REPOSITORY_URL](https://github.com/huzaifakhashan/GroupifyApp.git)
 
 
 ## 📥 Download the App
 
-👉 [Download Groupify APK](https://drive.google.com/file/d/1zTZCXQfKKybumi0WsCXZQseoG0oIAYjY/view?usp=drive_link)
+👉 [Download Groupify APK](https://github.com/huzaifakhashan/GroupifyApp/releases/tag/v1.0.0)
