@@ -1,0 +1,105 @@
+🔐 خطوات إضافية للتحقق من تسجيل الدخول
+=========================================
+
+إذا استمرت المشكلة بعد تحديث القواعم، جرب:
+
+1️⃣ تأكد من تسجيل دخول صحيح
+──────────────────────────
+1. افتح التطبيق
+2. انتقل إلى شاشة التسجيل
+3. استخدم بريد وكلمة مرور صحيحة
+
+الحسابات الموجودة (للاختبار):
+- user1@gmail.com / password123
+- user2@gmail.com / password123
+- أو أنشئ حساب جديد
+
+2️⃣ تحقق من البيانات المحفوظة
+─────────────────────────
+في Firebase Console:
+1. انتقل إلى Authentication
+2. تأكد من وجود المستخدمين هناك
+3. إذا لم يكن هناك أحد → أنشئ حساب من التطبيق
+
+3️⃣ راقب Console Logs
+─────────────────────
+افتح VS Code Terminal وشغل:
+
+flutter logs
+
+ستظهر الرسائل:
+- ✅ "✅ المستخدم: user@gmail.com"
+- ❌ "❌ خطأ في الحصول على المستخدم: ..."
+- 🔄 "🔄 جاري إرسال الرسالة..."
+
+4️⃣ تحقق من Firebase Config
+────────────────────────────
+في lib/main.dart:
+- تأكد من await Firebase.initializeApp();
+- تأكد من أن google-services.json موجود
+
+5️⃣ اختبر بـ Test Mode (اختياري)
+──────────────────────────────────
+
+إذا أردت اختبار سريع بدون قواعم معقدة:
+
+في Firebase Console → Firestore → القوانين:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+
+⚠️ هذا للاختبار فقط! لا تتركه في الإنتاج!
+
+بعد الاختبار الناجح:
+- عود إلى القواعم الآمنة من FIRESTORE_RULES_CORRECT.txt
+
+6️⃣ إعادة تشغيل شامل
+──────────────────
+
+flutter clean
+flutter pub get
+flutter run
+
+7️⃣ تفعيل Anonymous Auth (اختياري)
+──────────────────────────────────
+
+إذا أردت السماح بالاستخدام بدون تسجيل دخول:
+
+في Firebase Console:
+1. Authentication → Sign-in method
+2. فعّل "Anonymous" (مع التحذير)
+
+ثم في الكود:
+```dart
+if (FirebaseAuth.instance.currentUser == null) {
+  await FirebaseAuth.instance.signInAnonymously();
+}
+```
+
+🎯 ملخص الحل:
+==============
+
+المشكلة: Permission denied
+↓
+الحل 1: تحديث قواعم Firestore
+↓
+الحل 2: التحقق من تسجيل الدخول
+↓
+الحل 3: مراقبة الـ Console Logs
+↓
+النتيجة: ✅ يعمل!
+
+❓ إذا استمرت المشكلة:
+=======================
+
+أخبرني بـ:
+1. رسالة الخطأ الكاملة
+2. هل القواعم تم نشرها؟
+3. هل تسجيل الدخول يعمل؟
+4. ماذا يقول Console Log؟

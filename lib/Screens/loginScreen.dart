@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:groupify_app/Screens/chatScreen.dart';
 import 'package:groupify_app/Screens/signUpScreen.dart';
+import 'package:groupify_app/Services/notificationService.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 
 class LoginPage extends StatefulWidget {
@@ -14,10 +17,9 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   bool isLoading = false;
   final _auth = FirebaseAuth.instance;
-  late String email;
-  late String password;
+  String email = "";
+  String password = "";
   final TextEditingController emailController = TextEditingController();
-
   final TextEditingController passwordController = TextEditingController();
 
   @override
@@ -118,6 +120,16 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           onPressed: () async {
+                            if (email.isEmpty || password.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("الرجاء تعبئة جميع الحقول"),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+
                             setState(() {
                               isLoading = true;
                             });
@@ -128,27 +140,50 @@ class _LoginPageState extends State<LoginPage> {
                                     email: email,
                                     password: password,
                                   );
-
-                              if (user.user != null) {
-                                Navigator.push(
+                              await NotificationService().init();
+                              if (user.user != null && mounted) {
+                                Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) =>
-                                        ChatScreen(),
+                                    builder: (_) => const ChatScreen(),
+                                  ),
+                                );
+                              }
+                            } on FirebaseAuthException catch (e) {
+                              String errorMessage = "حدث خطأ";
+                              if (e.code == 'user-not-found') {
+                                errorMessage = "المستخدم غير موجود";
+                              } else if (e.code == 'wrong-password') {
+                                errorMessage = "كلمة المرور غير صحيحة";
+                              } else if (e.code == 'invalid-email') {
+                                errorMessage = "البريد الإلكتروني غير صحيح";
+                              } else if (e.code == 'user-disabled') {
+                                errorMessage = "الحساب معطل";
+                              }
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(errorMessage),
+                                    backgroundColor: Colors.red,
                                   ),
                                 );
                               }
                             } catch (e) {
-                              print(e);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text("خطأ: ${e.toString()}"),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
                             } finally {
-                              setState(() {
-                                isLoading = false;
-                              });
+                              if (mounted) {
+                                setState(() {
+                                  isLoading = false;
+                                });
+                              }
                             }
-
-                            setState(() {
-                              isLoading = false;
-                            });
                           },
                           child: const Text(
                             "تسجيل الدخول",

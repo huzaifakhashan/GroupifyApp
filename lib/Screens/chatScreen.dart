@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:groupify_app/Screens/IncomingCallScreen.dart';
+import 'package:groupify_app/Screens/privateChatScreen.dart';
+import 'package:groupify_app/Screens/myChatsScreen.dart';
+import 'package:groupify_app/Screens/searchUsersScreen.dart';
+import 'package:groupify_app/Screens/callsScreen.dart';
 import 'package:groupify_app/Widgets/Drawer/drawerPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -19,35 +24,93 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
-  late User signedInUser;
+  User? signedInUser;
+  
   void getCurrentUser() {
     try {
       final user = _auth.currentUser;
       if (user != null) {
         signedInUser = user;
+        String userInfo = user.displayName ?? 
+                         user.email ?? 
+                         (user.isAnonymous ? "مستخدم مجهول" : "مستخدم");
+        print("✅ المستخدم: $userInfo");
+        print("✅ معرّف المستخدم: ${user.uid}");
+        print("✅ نوع المستخدم: ${user.isAnonymous ? "مجهول" : "عادي"}");
+      } else {
+        print("❌ لا يوجد مستخدم مسجل");
       }
     } catch (e) {
-      print(e);
+      print("❌ خطأ في الحصول على المستخدم: $e");
     }
   }
+void listenForCalls(){
 
+final receiverEmail = FirebaseAuth.instance.currentUser?.email;
+if (receiverEmail == null) return;
+
+FirebaseFirestore.instance
+.collection("calls")
+.where(
+"receiver",
+isEqualTo: receiverEmail
+)
+.snapshots()
+.listen((snapshot){
+
+
+for(var doc in snapshot.docs){
+
+
+var data = doc.data();
+
+
+if(data["status"]=="ringing"){
+
+
+Navigator.push(
+context,
+MaterialPageRoute(
+builder:(_)=>
+IncomingCallScreen(
+callId: doc.id,
+callerName:
+data["callerName"] ?? data["caller"] ?? "مجهول",
+callerEmail:
+data["caller"] ?? "",
+),
+),
+);
+
+
+}
+
+
+}
+
+
+
+});
+
+
+}
   @override
-void initState() {
-  super.initState();
-  getCurrentUser();
+  void initState() {
+    super.initState();
+    getCurrentUser();
+    listenForCalls();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
+  }
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _scrollToBottom();
-  });
-}
+  Future<void> refreshUser() async {
+    await FirebaseAuth.instance.currentUser?.reload();
 
-Future<void> refreshUser() async {
-  await FirebaseAuth.instance.currentUser?.reload();
-
-  setState(() {
-    signedInUser = FirebaseAuth.instance.currentUser!;
-  });
-}
+    setState(() {
+      signedInUser = FirebaseAuth.instance.currentUser!;
+    });
+  }
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
@@ -62,28 +125,103 @@ Future<void> refreshUser() async {
   void sendMessage() async {
     final text = messageController.text.trim();
 
-    if (text.isEmpty) return;
+    if (text.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("الرجاء كتابة رسالة"),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
 
-    // final user = FirebaseAuth.instance.currentUser;
+    if (signedInUser == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("خطأ: لم تسجل دخول"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
 
-    await _firestore.collection("messages").add({
-      "text": text,
-      "sender": signedInUser.email,
-      "name": signedInUser.displayName,
-      "timestamp": FieldValue.serverTimestamp(),
-    });
+    try {
+      print("🔄 جاري إرسال الرسالة...");
+      
+      // حدد اسم المرسل
+      String senderName = signedInUser!.displayName ?? 
+                         (signedInUser!.isAnonymous ? "مستخدم مجهول" : "مستخدم");
+      String senderEmail = signedInUser!.email ?? 
+                          (signedInUser!.isAnonymous ? "anonymous_${signedInUser!.uid}" : "unknown");
+      
+      print("المرسل: $senderEmail");
+      print("اسم المرسل: $senderName");
+      print("النص: $text");
+      
+      final messageDoc = await _firestore.collection("messages").add({
+        "text": text,
+        "sender": senderEmail,
+        "name": senderName,
+        "photoUrl": signedInUser!.photoURL,
+        "userId": signedInUser!.uid,
+        "timestamp": FieldValue.serverTimestamp(),
+        "createdAt": DateTime.now().millisecondsSinceEpoch,
+        "isAnonymous": signedInUser!.isAnonymous,
+      });
+      
+      print("✅ تم إرسال الرسالة بنجاح - ID: ${messageDoc.id}");
+      messageController.clear();
 
-    messageController.clear();
+      // انتظر قليلاً ثم اسحب للأسفل
+      await Future.delayed(const Duration(milliseconds: 200));
+      _scrollToBottom();
+    } on FirebaseException catch (e) {
+      print("❌ خطأ Firebase: ${e.code} - ${e.message}");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("خطأ: ${e.message}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print("❌ خطأ في إرسال الرسالة: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("خطأ: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
       drawer: const Drawerpage(showLogout: true),
       appBar: AppBar(
         backgroundColor: const Color(0xFF4A00E0),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
+        bottom: const TabBar(
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          tabs: [
+            Tab(text: "المجموعة"),
+            Tab(text: "دردشاتي"),
+            Tab(text: "المكالمات"),
+          ],
+        ),
         title: isSearching
             ? TextField(
                 controller: searchController,
@@ -111,7 +249,7 @@ Future<void> refreshUser() async {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      signedInUser.displayName ?? signedInUser.email!,
+                      signedInUser?.displayName ?? signedInUser?.email ?? "المستخدم",
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -121,6 +259,18 @@ Future<void> refreshUser() async {
                 ],
               ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_search),
+            tooltip: "البحث عن مستخدم",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SearchUsersScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(isSearching ? Icons.close : Icons.search),
             onPressed: () {
@@ -138,7 +288,9 @@ Future<void> refreshUser() async {
         ],
       ),
 
-      body: Container(
+      body: TabBarView(
+        children: [
+          Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFF4A00E0), Color(0xFF8E2DE2)],
@@ -164,17 +316,59 @@ Future<void> refreshUser() async {
                 child: StreamBuilder<QuerySnapshot>(
                   stream: _firestore
                       .collection("messages")
-                      .orderBy("timestamp")
+                      .orderBy("timestamp", descending: false)
                       .snapshots(),
                   builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: Colors.red,
+                              size: 50,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              "خطأ: ${snapshot.error}",
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
 
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline,
+                              color: Colors.indigo.shade300,
+                              size: 50,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              "لا توجد رسائل حتى الآن",
+                              style: TextStyle(
+                                color: Colors.indigo.shade300,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
                     final messages = snapshot.data!.docs;
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _scrollToBottom();
-                    });
+
                     return ListView.builder(
                       controller: _scrollController,
                       itemCount: messages.length,
@@ -184,6 +378,7 @@ Future<void> refreshUser() async {
 
                         final name = data["name"] ?? "مستخدم";
                         final text = data["text"] ?? "";
+                        final photoUrl = data["photoUrl"] as String?;
                         final nameLower = name.toLowerCase();
                         final textLower = text.toLowerCase();
                         final query = searchText.toLowerCase();
@@ -197,11 +392,34 @@ Future<void> refreshUser() async {
                           return const SizedBox.shrink();
                         }
                         final sender = data["sender"] ?? "";
-                        final isMe = sender == signedInUser.email;
+                        final isMe = sender == (signedInUser?.email ?? "");
 
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Column(
+                          child: Row(
+                            mainAxisAlignment: isMe
+                                ? MainAxisAlignment.end
+                                : MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              if (!isMe) ...[
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: Colors.indigo.shade100,
+                                  backgroundImage:
+                                      (photoUrl != null && photoUrl.isNotEmpty)
+                                          ? NetworkImage(photoUrl)
+                                          : null,
+                                  child: (photoUrl == null || photoUrl.isEmpty)
+                                      ? Icon(Icons.person,
+                                          size: 18,
+                                          color: Colors.indigo.shade700)
+                                      : null,
+                                ),
+                                const SizedBox(width: 6),
+                              ],
+                              Flexible(
+                                child: Column(
                             crossAxisAlignment: isMe
                                 ? CrossAxisAlignment.end
                                 : CrossAxisAlignment.start,
@@ -212,12 +430,25 @@ Future<void> refreshUser() async {
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
                                   ),
-                                  child: Text(
-                                    name,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.indigo.shade700,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => PrivateChatScreen(
+                                            userName: name,
+                                            userEmail: sender,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: Text(
+                                      name,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.indigo.shade700,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -266,6 +497,9 @@ Future<void> refreshUser() async {
                                 ),
                               ),
                             ],
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       },
@@ -308,6 +542,11 @@ Future<void> refreshUser() async {
             ),
           ],
         ),
+          ),
+          const MyChatsList(),
+          const CallsList(),
+        ],
+      ),
       ),
     );
   }

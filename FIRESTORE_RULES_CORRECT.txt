@@ -1,0 +1,56 @@
+// ✅ قواعم أمان Firestore الصحيحة
+// اذهب إلى: Firebase Console → Firestore Database → القوانين (Rules)
+// احذف كل شيء واستبدله بالقواعم التالية:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // السماح للمستخدمين المسجلين فقط
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // قواعم محددة للرسائل
+    match /messages/{messageId} {
+      // السماح بالقراءة للمستخدمين المسجلين
+      allow read: if request.auth != null;
+      
+      // السماح بالكتابة للمستخدمين المسجلين
+      allow create: if request.auth != null && 
+                       request.resource.data.text is string &&
+                       request.resource.data.sender is string;
+      
+      // السماح بحذف الرسالة من مرسلها فقط
+      allow delete: if request.auth != null && 
+                       resource.data.sender == request.auth.token.email;
+      
+      // السماح بتحديث الرسالة من مرسلها فقط
+      allow update: if request.auth != null && 
+                       resource.data.sender == request.auth.token.email;
+    }
+    
+    // قواعم محددة للمستخدمين
+    match /users/{userId} {
+      // السماح بالقراءة للمستخدمين المسجلين
+      allow read: if request.auth != null;
+      
+      // السماح بالكتابة فقط للمستخدم نفسه
+      allow write: if request.auth != null && 
+                      request.auth.uid == userId;
+    }
+    
+    // قواعم محددة للمكالمات
+    match /calls/{callId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+    
+    // قواعم محددة للدردشات الخاصة
+    match /private_chats/{chatId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}

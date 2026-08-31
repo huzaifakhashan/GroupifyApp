@@ -1,0 +1,100 @@
+🔒 قواعد أمان Firestore المطلوبة
+===============================
+
+⚠️ المشكلة الأساسية: 
+إذا كنت لا تستقبل أو لا تستطيع إرسال رسائل، فالسبب غالباً هو:
+❌ قواعد أمان Firestore غير صحيحة
+
+✅ الحل:
+في Firebase Console → Firestore Database → القوانين (Rules)
+
+انسخ والصق القوانين التالية:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // السماح للمستخدمين المسجلين فقط بالقراءة والكتابة
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // قوانين محددة للرسائل
+    match /messages/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && 
+                       request.resource.data.sender == request.auth.token.email &&
+                       request.resource.data.text is string &&
+                       request.resource.data.text.size() > 0;
+      allow delete: if request.auth != null && 
+                       resource.data.sender == request.auth.token.email;
+    }
+    
+    // قوانين محددة للمستخدمين
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+                      request.auth.uid == userId;
+    }
+    
+    // قوانين محددة للمكالمات
+    match /calls/{callId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}
+
+📋 خطوات التطبيق:
+==================
+
+1. افتح Firebase Console
+2. اختر مشروعك "groupify_app"
+3. انتقل إلى Firestore Database
+4. اضغط على "القوانين" (Rules)
+5. احذف القواعم الحالية واستبدلها بالقواعم أعلاه
+6. اضغط "نشر" (Publish)
+7. انتظر 2-3 ثواني للتطبيق
+
+✅ اختبر التطبيق:
+1. سجل دخول
+2. اكتب رسالة واضغط إرسال
+3. يجب أن ترى "✅ تم إرسال الرسالة" و "اسحب للأسفل للرسالة الجديدة"
+4. فتح التطبيق من جهاز آخر يجب أن ترى نفس الرسائل
+
+🐛 تصحيح الأخطاء:
+===================
+
+إذا حصلت على هذه الأخطاء:
+
+1️⃣ "Permission denied" 
+   → قم بتحديث قوانين Firestore أعلاه
+
+2️⃣ "Failed to add document"
+   → تأكد من أن المستخدم قام بـ updateDisplayName بعد التسجيل
+
+3️⃣ "لا توجد رسائل حتى الآن"
+   → تأكد من:
+      - أن لديك رسائل في Firestore Collection
+      - أن قوانين الأمان تسمح بالقراءة
+      - افتح Firestore Console وتحقق من وجود مجموعة "messages"
+
+4️⃣ "خطأ في الإرسال"
+   → افتح Console (Ctrl+Shift+I) وابحث عن الخطأ الكامل
+
+📱 لاختبار محلياً:
+==================
+
+في Firestore Console اختر وضع "Test mode" مؤقتاً:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+
+⚠️ لا تترك التطبيق بهذا الوضع في الإنتاج!
+استخدمه للاختبار فقط.

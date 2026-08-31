@@ -1,0 +1,42 @@
+// ✅ قواعم Firestore للاختبار (مع Anonymous Auth)
+// اذهب إلى: Firebase Console → Firestore Database → القوانين (Rules)
+// احذف كل شيء واستبدله بهذا:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // السماح للجميع (سجل دخول عادي أو مجهول)
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // قواعم محددة للرسائل
+    match /messages/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null;
+      allow update: if request.auth != null;
+    }
+    
+    // قواعم محددة للمستخدمين
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // قواعم محددة للمكالمات
+    match /calls/{callId} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // قواعم محددة للدردشات الخاصة
+    match /private_chats/{chatId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+
+// ⚠️ تحذير:
+// هذه القواعم آمنة للاختبار والتطوير
+// لكن في الإنتاج (Production) استخدم قواعم أكثر أماناً

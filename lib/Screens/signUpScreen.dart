@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:groupify_app/Screens/chatScreen.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:groupify_app/Screens/chatScreen.dart';
+import 'package:groupify_app/Services/usernameService.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -171,31 +174,71 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 );
                             await newUser.user!.updateDisplayName(name);
                             await newUser.user!.reload();
-                            if (newUser.user != null) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const ChatScreen(),
-    ),
-  );
-}
+                            String? token = await FirebaseMessaging.instance
+                                .getToken();
+                            final username =
+                                await UsernameService.generateAndReserve(
+                              uid: newUser.user!.uid,
+                              name: name,
+                            );
+                            await FirebaseFirestore.instance
+                                .collection("users")
+                                .doc(newUser.user!.uid)
+                                .set({
+                                  "name": name,
+                                  "email": email,
+                                  "fcmToken": token,
+                                  "createdAt": FieldValue.serverTimestamp(),
+                                  "isPrivate": false,
+                                  "username": username,
+                                });
+                            if (newUser.user != null && mounted) {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ChatScreen(),
+                                ),
+                              );
+                            }
+                          } on FirebaseAuthException catch (e) {
+                            if (mounted) {
+                              String errorMessage = "حدث خطأ في التسجيل";
+                              if (e.code == 'weak-password') {
+                                errorMessage = "كلمة المرور ضعيفة جداً";
+                              } else if (e.code == 'email-already-in-use') {
+                                errorMessage = "البريد الإلكتروني موجود مسبقاً";
+                              } else if (e.code == 'invalid-email') {
+                                errorMessage = "البريد الإلكتروني غير صحيح";
+                              }
+                              setState(() {
+                                isLoading = false;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(errorMessage),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           } catch (e) {
+                            if (mounted) {
+                              setState(() {
+                                isLoading = false;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("خطأ: ${e.toString()}"),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+
+                          if (mounted) {
                             setState(() {
                               isLoading = false;
                             });
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  "الإيميل موجود مسبقاَ الرجاء اخيتار ايميل آخر",
-                                ),
-                              ),
-                            );
                           }
-
-                          setState(() {
-                            isLoading = false;
-                          });
                         },
                         child: const Text(
                           "التسجيل",
