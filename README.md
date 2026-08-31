@@ -33,7 +33,7 @@ Groupify allows users to communicate and exchange messages in real time. Data is
 
 1. Clone the repository:
    ```bash
-   [git clone YOUR_REPOSITORY_URL](https://github.com/huzaifakhashan/GroupifyApp.git)
+   [git clone YOUR_REPOSITORY_URL](https://github.com/huzaifakhashan/GroupifyApp/releases/tag/v1.0.0)
 
 
 ## 📥 Download the App
