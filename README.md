@@ -8,14 +8,12 @@ Messages and user data are stored in the cloud using Firebase Firestore, authent
 
 ## 📸 Screenshots
 
-### الصفحة الرئيسية
-<img src="screenShots/image_1.jpg" width="300">
+<p align="center">
+  <img src="screenShots/image_1.jpg" width="250">
+  <img src="screenShots/image_2.jpg" width="250">
+  <img src="screenShots/image_3.jpg" width="250">
+</p>
 
-### صفحة تسجيل الدخول
-<img src="screenShots/image_1.jpg" width="300">
-
-### صفحة الإعدادات
-<img src="screenShots/image_1.jpg" width="300">
 
 ## ✨ Features
 
