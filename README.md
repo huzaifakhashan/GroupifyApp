@@ -6,6 +6,17 @@ Groupify is a modern chat application that allows users to create accounts and c
 
 Messages and user data are stored in the cloud using Firebase Firestore, authentication is handled through Firebase Authentication, and real-time push notifications are provided using Firebase Cloud Messaging. The application also supports image and file sharing through Firebase Storage.
 
+## 📸 Screenshots
+
+### الصفحة الرئيسية
+<img src="screenShots/image_1.jpg" width="300">
+
+### صفحة تسجيل الدخول
+<img src="screenShots/image_1.jpg" width="300">
+
+### صفحة الإعدادات
+<img src="screenShots/image_1.jpg" width="300">
+
 ## ✨ Features
 
 - 🔐 User registration and authentication with Firebase Auth
