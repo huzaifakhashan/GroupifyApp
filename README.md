@@ -24,6 +24,21 @@ Messages and user data are stored in the cloud using Firebase Firestore, authent
 - Firebase Cloud Messaging
 
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="screenShots/image_1.jpg" width="200" />
+  <img src="screenShots/image_2.jpg" width="200" />
+  <img src="screenShots/image_3.jpg" width="200" />
+  <img src="screenShots/image_4.jpg" width="200" />
+</p>
+<p align="center">
+  <img src="screenShots/image_5.jpg" width="200" />
+  <img src="screenShots/image_6.jpg" width="200" />
+  <img src="screenShots/image_7.jpg" width="200" />
+  <img src="screenShots/image_8.jpg" width="200" />
+</p>
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -36,9 +51,34 @@ Messages and user data are stored in the cloud using Firebase Firestore, authent
 
 1. Clone the repository:
    ```bash
-   [git clone YOUR_REPOSITORY_URL](https://github.com/huzaifakhashan/GroupifyApp.git)
+   git clone https://github.com/huzaifakhashan/GroupifyApp.git
+   cd GroupifyApp
+   ```
 
+2. Install the dependencies:
+   ```bash
+   flutter pub get
+   ```
+
+3. Set up Firebase:
+   - Create a new project on the [Firebase Console](https://console.firebase.google.com/)
+   - Enable Authentication, Cloud Firestore, Storage, and Cloud Messaging
+   - Add your Android/iOS app and download `google-services.json` / `GoogleService-Info.plist` into the appropriate platform folders
+   - Or run `flutterfire configure` to generate `firebase_options.dart` automatically
+
+4. Run the app:
+   ```bash
+   flutter run
+   ```
 
 ## 📥 Download the App
 
 👉 [Download Groupify APK](https://github.com/huzaifakhashan/GroupifyApp/releases/tag/v1.0.0)
+
+## 📄 License
+
+This project has no explicit license yet. All rights reserved by the author unless stated otherwise.
+
+## 📬 Contact
+
+Created by [Huzaifa Khashan](https://github.com/huzaifakhashan) — feel free to reach out with questions or suggestions.
