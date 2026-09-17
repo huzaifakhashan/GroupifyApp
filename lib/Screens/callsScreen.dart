@@ -94,7 +94,7 @@ class CallsList extends StatelessWidget {
 
                   return ListView.separated(
                     itemCount: calls.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, _) =>
                         const Divider(height: 1, indent: 72),
                     itemBuilder: (context, index) {
                       final data =

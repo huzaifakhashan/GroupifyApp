@@ -190,6 +190,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   "fcmToken": token,
                                   "createdAt": FieldValue.serverTimestamp(),
                                   "isPrivate": false,
+                                  "blockGroupInvites": false,
                                   "username": username,
                                 });
                             if (newUser.user != null && mounted) {

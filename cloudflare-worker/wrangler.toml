@@ -1,0 +1,10 @@
+name = "groupify-agora-token"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+AGORA_APP_ID = "6d06e3254604434fa88824a99d034d95"
+
+# الأسرار (Certificate + مفتاح المصادقة) ما بتنحط هون —
+# بتنضاف بأمر "wrangler secret put" (شوف README.md).

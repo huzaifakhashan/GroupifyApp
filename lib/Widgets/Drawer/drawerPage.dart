@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:groupify_app/Widgets/Drawer/account_actions.dart';
 import 'about_page.dart';
 import 'contact_page.dart';
 import 'rate_page.dart';
 import 'app_info_page.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:groupify_app/Screens/loginScreen.dart';
+import 'package:groupify_app/Screens/profileScreen.dart';
 class Drawerpage extends StatelessWidget {
     final bool showLogout;
 
@@ -66,7 +64,7 @@ class Drawerpage extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.only(top: 10),
                 decoration: const BoxDecoration(
-                  color: Colors.white,
+                  color: Colors.transparent,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(30),
                   ),
@@ -75,6 +73,20 @@ class Drawerpage extends StatelessWidget {
   children: [
 
     _buildItem(
+      context,
+      Icons.person_outline,
+      "الملف الشخصي",
+      () {
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfileScreen()),
+        );
+      },
+    ),
+
+    _buildItem(
+      context,
       Icons.info_outline,
       "من نحن",
       () {
@@ -90,6 +102,7 @@ class Drawerpage extends StatelessWidget {
     ),
 
     _buildItem(
+      context,
       Icons.support_agent,
       "تواصل معنا",
       () {
@@ -105,6 +118,7 @@ class Drawerpage extends StatelessWidget {
     ),
 
     _buildItem(
+      context,
       Icons.star_outline,
       "قيّم التطبيق",
       () {
@@ -119,6 +133,7 @@ class Drawerpage extends StatelessWidget {
     ),
 
     _buildItem(
+      context,
       Icons.article_outlined,
       "نبذة عن التطبيق",
       () {
@@ -132,24 +147,7 @@ class Drawerpage extends StatelessWidget {
         );
       },
     ),
-if (showLogout) ...[
-    const AccountActions(),],
 
-  _buildItem(
-    Icons.logout,
-    "تسجيل الخروج",
-    () async {
-      await FirebaseAuth.instance.signOut();
-
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => LoginPage(),
-        ),
-        (route) => false,
-      );
-    },
-  ),
 ],
 ),
               ),
@@ -160,7 +158,12 @@ if (showLogout) ...[
     );
   }
 
-  Widget _buildItem(IconData icon, String title, VoidCallback onTap) {
+  Widget _buildItem(
+    BuildContext context,
+    IconData icon,
+    String title,
+    VoidCallback onTap,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
       child: InkWell(
@@ -169,7 +172,7 @@ if (showLogout) ...[
         child: Container(
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(15),
           ),
           child: Row(

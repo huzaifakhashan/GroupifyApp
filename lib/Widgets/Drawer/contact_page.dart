@@ -27,7 +27,7 @@ class ContactPage extends StatelessWidget {
         child: Column(
           children: [
             item(Icons.email, "البريد الإلكتروني", "groupify@gmail.com"),
-            item(Icons.phone, "الهاتف", "+963 999 999 999"),
+            item(Icons.phone, "الهاتف", "+964 784 588 4502"),
             item(Icons.language, "الموقع الإلكتروني", "www.groupify.com"),
           ],
         ),

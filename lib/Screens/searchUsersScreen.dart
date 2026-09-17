@@ -132,7 +132,7 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
 
               return ListView.separated(
                 itemCount: users.length,
-                separatorBuilder: (_, __) =>
+                separatorBuilder: (_, _) =>
                     const Divider(height: 1, indent: 72),
                 itemBuilder: (context, index) {
                   final data = users[index].data() as Map<String, dynamic>;

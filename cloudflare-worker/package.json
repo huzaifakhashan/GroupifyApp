@@ -1,0 +1,14 @@
+{
+  "name": "groupify-agora-token",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "agora-token": "^2.0.6"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

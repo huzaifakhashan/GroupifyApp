@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:groupify_app/Screens/chatScreen.dart';
 import 'package:groupify_app/Screens/homeScreen.dart';
+import 'package:groupify_app/Screens/loginScreen.dart';
 import 'package:groupify_app/Services/usernameService.dart';
+import 'package:groupify_app/Services/imageService.dart';
 
 class AccountActions extends StatelessWidget {
   const AccountActions({super.key});
@@ -17,6 +19,7 @@ class AccountActions extends StatelessWidget {
     return Column(
       children: [
         if (uid != null) _buildPrivacyToggle(uid),
+        if (uid != null) _buildGroupInvitePrivacyToggle(uid),
         if (uid != null) _buildUsernameTile(context, uid),
         if (uid != null)
           _buildItem(
@@ -79,12 +82,6 @@ class AccountActions extends StatelessWidget {
           );
         }),
         _buildItem(context, Icons.delete, "حذف الحساب", () async {
-          Navigator.pop(context);
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => Homescreen()),
-          );
-
           try {
             final user = FirebaseAuth.instance.currentUser;
 
@@ -92,7 +89,11 @@ class AccountActions extends StatelessWidget {
               await user.delete();
               await FirebaseAuth.instance.signOut(); // 👈 مهم جداً
               if (!context.mounted) return;
-              Navigator.pop(context);
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const Homescreen()),
+                (route) => false,
+              );
             }
           } on FirebaseAuthException catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -105,6 +106,15 @@ class AccountActions extends StatelessWidget {
               ),
             );
           }
+        }),
+        _buildItem(context, Icons.logout, "تسجيل الخروج", () async {
+          await FirebaseAuth.instance.signOut();
+          if (!context.mounted) return;
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => LoginPage()),
+            (route) => false,
+          );
         }),
       ],
     );
@@ -168,6 +178,64 @@ class AccountActions extends StatelessWidget {
     );
   }
 
+  Widget _buildGroupInvitePrivacyToggle(String uid) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final data = snapshot.data?.data() as Map<String, dynamic>?;
+        final blockInvites = data?["blockGroupInvites"] == true;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+          child: Container(
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.group_off, color: Colors.indigo),
+                const SizedBox(width: 15),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "منع الإضافة إلى المجموعات",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        "ما حدا غيرك رح يقدر يضيفك على مجموعة، وبتضل قادر تنضم بنفسك عبر كود الدعوة",
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: blockInvites,
+                  activeThumbColor: Colors.indigo,
+                  onChanged: (value) {
+                    FirebaseFirestore.instance
+                        .collection("users")
+                        .doc(uid)
+                        .set({"blockGroupInvites": value}, SetOptions(merge: true));
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _changeProfilePicture(BuildContext context, String uid) async {
     try {
       final picker = ImagePicker();
@@ -178,14 +246,13 @@ class AccountActions extends StatelessWidget {
       );
       if (picked == null) return;
 
-      final bytes = await picked.readAsBytes();
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child("profile_pictures")
-          .child("$uid.jpg");
-
-      await ref.putData(bytes, SettableMetadata(contentType: "image/jpeg"));
-      final url = await ref.getDownloadURL();
+      final url = await ImageService().uploadImageToSupabase(
+        imageFile: File(picked.path),
+        userId: uid,
+      );
+      if (url == null || url.isEmpty) {
+        throw Exception("تعذّر الحصول على رابط الصورة");
+      }
 
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -201,6 +268,14 @@ class AccountActions extends StatelessWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("تم تحديث الصورة الشخصية")),
+      );
+    } on FirebaseException catch (e) {
+      if (!context.mounted) return;
+      final message = e.code == "permission-denied"
+          ? "لا تملك صلاحية رفع الصورة. انشر قواعد Storage في Firebase."
+          : "فشل رفع الصورة: ${e.message ?? e.code}";
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
       );
     } catch (e) {
       if (!context.mounted) return;
@@ -302,7 +377,7 @@ class AccountActions extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(15),
           ),
           child: Row(

@@ -1,0 +1,251 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function reactionsOnly() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['reactions']);
+    }
+
+    // "حذف لدي" على مستوى رسالة وحدة: أي حدا قاري الرسالة (مو بس المرسل)
+    // فيه يخفيها عن نفسه بس بإضافة uid تبعه لـ deletedFor، بدون ما يلمس
+    // أي حقل تاني ولا يقدر يحذف/يخفيها لحدا غيره. "حذف لدى الجميع" الحقيقي
+    // (Firestore delete) يضل مسموح للمرسل بس (allow delete الموجودة أصلاً).
+    function existingDeletedFor() {
+      return 'deletedFor' in resource.data ? resource.data.deletedFor : [];
+    }
+    function deletedForSelfOnly() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletedFor']) &&
+        request.resource.data.deletedFor.size() == existingDeletedFor().size() + 1 &&
+        request.resource.data.deletedFor.hasAll(existingDeletedFor()) &&
+        request.resource.data.deletedFor[request.resource.data.deletedFor.size() - 1] == request.auth.uid;
+    }
+
+    // تحديث حالة رسالة محادثة خاصة (١=أرسلت، ٢=وصلت، ٣=قُريت): المستلم
+    // (مش المرسل) هو يلي بيسجلها لما يفتح المحادثة، فلازم يقدر يعدل
+    // status/deliveredAt/readAt على رسالة مش رسالته، بشرط الرقم يزيد بس
+    // (منع الرجوع للخلف) وما يلمس أي حقل تاني.
+    function currentMessageStatus() {
+      return ('status' in resource.data && resource.data.status is int)
+          ? resource.data.status : 1;
+    }
+    function isStatusUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'deliveredAt', 'readAt']) &&
+        resource.data.sender != request.auth.token.email &&
+        request.resource.data.status is int &&
+        request.resource.data.status > currentMessageStatus() &&
+        request.resource.data.status <= 3;
+    }
+
+    match /messages/{messageId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow delete: if signedIn() &&
+        resource.data.sender == request.auth.token.email;
+      allow update: if signedIn() &&
+        (resource.data.sender == request.auth.token.email ||
+          reactionsOnly() || deletedForSelfOnly());
+    }
+
+    match /private_chats/{chatId} {
+      allow read, write: if signedIn();
+
+      match /messages/{messageId} {
+        allow read, create: if signedIn();
+        allow delete: if signedIn() &&
+          resource.data.sender == request.auth.token.email;
+        allow update: if signedIn() &&
+          (resource.data.sender == request.auth.token.email ||
+            reactionsOnly() || deletedForSelfOnly() || isStatusUpdate());
+      }
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /calls/{callId} {
+      allow read, write: if signedIn();
+    }
+
+    match /group_calls/{callId} {
+      allow read, write: if signedIn();
+
+      match /participants/{uid} {
+        allow read, write: if signedIn();
+      }
+    }
+
+    match /groupInviteCodes/{code} {
+      // ربط كود دعوة قصير (6 أرقام) بمعرف مجموعة، تستخدمه شاشة "الانضمام
+      // لمجموعة". الكود نفسه هو الـ document ID، فـ Firestore بيمنع تلقائياً
+      // إعادة استخدام نفس الكود: أي محاولة "إنشاء" لكود موجود مسبقاً بتصير
+      // من نوع update مش create، وهاي القاعدة ما بتسمح بالـ update إطلاقاً.
+      allow read: if signedIn();
+      allow create: if signedIn() &&
+        request.resource.data.groupId is string &&
+        request.auth.uid in
+          get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.memberUids;
+      allow update, delete: if false;
+    }
+
+    match /groupUsernames/{handle} {
+      // معرّف نصي ثابت (زي @اسم) لمجموعة، بيسمح لأي حدا يعرفه إنه يوصل
+      // للمجموعة حتى لو مفعّل فيها "إخفاء عن نتائج البحث" - بالضبط متل
+      // الحسابات الخاصة يلي بتنلاقى بمعرفها الفريد بالظبط. تغيير المعرّف
+      // بيصير بحذف القديم وحجز الجديد (متل usernames للمستخدمين).
+      allow read: if signedIn();
+      allow create: if signedIn() &&
+        request.resource.data.groupId is string &&
+        request.auth.uid in
+          get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.memberUids;
+      allow delete: if signedIn() &&
+        request.auth.uid in
+          get(/databases/$(database)/documents/groups/$(resource.data.groupId)).data.memberUids;
+      allow update: if false;
+    }
+
+    match /groups/{groupId} {
+      // صلاحيات المجموعة: المالك (createdBy) وحده يقدر يضيف أعضاء جدد
+      // ويدير قائمة المشرفين (admins). المالك والمشرفين مع بعض يقدروا
+      // يشيلوا عضو (غير المالك وغير مشرف تاني إذا الشايل مو المالك نفسه)
+      // ويعدلوا اسم/صورة المجموعة. أي عضو عادي بس فيه يبعت رسائل (يلي
+      // بتحدّث lastMessage)، يغيّر إعدادات الخصوصية/المعرّف/كود الدعوة
+      // (نفس الوضع القديم)، أو يطلع من المجموعة لحاله. الانضمام الذاتي
+      // (بكود الدعوة أو المعرّف) مسموح دايماً لأي حدا بغض النظر عن دوره،
+      // وبرضو محكوم بخاصية "منع الإضافة إلى المجموعات" (blockGroupInvites)
+      // لما حدا تاني (المالك) هو يلي بيضيف - حتى لو تلاعب حدا بالتطبيق
+      // نفسه، ما بيقدر يتخطى الحماية لأنها مفروضة من قواعد السيرفر.
+      function membersUnchanged() {
+        return request.resource.data.memberUids == resource.data.memberUids;
+      }
+      function isOwner() {
+        return request.auth.uid == resource.data.createdBy;
+      }
+      function isAdmin() {
+        return 'admins' in resource.data && request.auth.uid in resource.data.admins;
+      }
+      function isOwnerOrAdmin() {
+        return isOwner() || isAdmin();
+      }
+      function isSelfLeave() {
+        return request.resource.data.memberUids.size() == resource.data.memberUids.size() - 1 &&
+          resource.data.memberUids.hasAll(request.resource.data.memberUids) &&
+          !(request.auth.uid in request.resource.data.memberUids);
+      }
+      function isSingleAddition() {
+        return request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1 &&
+          request.resource.data.memberUids.hasAll(resource.data.memberUids);
+      }
+      function newlyAddedUid() {
+        return request.resource.data.memberUids[request.resource.data.memberUids.size() - 1];
+      }
+      function newMemberAllowsInvite() {
+        return newlyAddedUid() == request.auth.uid ||
+          get(/databases/$(database)/documents/users/$(newlyAddedUid())).data.blockGroupInvites != true;
+      }
+      // إضافة عضو من طرف حدا تاني (مو انضمام ذاتي) مسموحة للمالك بس.
+      function isOwnerAddingMember() {
+        return isOwner() && isSingleAddition() && newMemberAllowsInvite();
+      }
+      function isSingleRemoval() {
+        return request.resource.data.memberUids.size() == resource.data.memberUids.size() - 1 &&
+          resource.data.memberUids.hasAll(request.resource.data.memberUids);
+      }
+      function ownerUntouched() {
+        return resource.data.createdBy in request.resource.data.memberUids;
+      }
+      function adminsUntouchedUnlessOwner() {
+        return isOwner() ||
+          !('admins' in resource.data) ||
+          request.resource.data.memberUids.hasAll(resource.data.admins);
+      }
+      // إزالة عضو (غير المالك) مسموحة للمالك والمشرفين، بس المشرف ما
+      // بيقدر يشيل مشرف تاني ولا المالك (adminsUntouchedUnlessOwner).
+      function isAdminRemoval() {
+        return isOwnerOrAdmin() && isSingleRemoval() &&
+          ownerUntouched() && adminsUntouchedUnlessOwner();
+      }
+      // تعديل اسم/صورة المجموعة: للمالك والمشرفين بس، وبدون أي تغيير
+      // بالعضوية بنفس العملية.
+      function isMetadataUpdate() {
+        return membersUnchanged() && isOwnerOrAdmin() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photoUrl']);
+      }
+      // تعيين/إزالة مشرف: المالك بس، وكل مشرف مقترح لازم يكون عضو فعلي.
+      function isAdminListChange() {
+        return membersUnchanged() && isOwner() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['admins']) &&
+          request.resource.data.admins is list &&
+          resource.data.memberUids.hasAll(request.resource.data.admins);
+      }
+      // تحديثات عادية بيحتاجها أي عضو بمجرى الاستخدام الطبيعي: إرسال
+      // رسالة (lastMessage...)، الخصوصية/المعرّف/كود الدعوة.
+      function isRoutineMemberUpdate() {
+        return membersUnchanged() &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['lastMessage', 'lastMessageTime', 'lastSenderName',
+                       'isPrivate', 'groupUsername', 'joinCode']);
+      }
+
+      // القراءة مسموحة للأعضاء دايماً، وللمجموعات غير المخفية (isPrivate
+      // != true) لأي مستخدم مسجل دخول حتى تقدر تظهر بشاشة "البحث عن
+      // مجموعة" - بالضبط متل خاصية isPrivate عند المستخدمين. المجموعة
+      // المخفية (isPrivate == true) تضل محصورة بأعضائها بس، إلا إذا
+      // كان إلها معرّف (groupUsername) - عندها أي حدا يعرف المعرّف
+      // بالضبط فيه يوصلها (get() مباشر لمستند واحد، مش استعلام قائمة،
+      // فما في مشكلة إثبات الاستعلام هون).
+      allow read: if signedIn() &&
+        (request.auth.uid in resource.data.memberUids ||
+          resource.data.isPrivate != true ||
+          (resource.data.groupUsername is string &&
+            resource.data.groupUsername.size() > 0));
+      allow update: if signedIn() &&
+        (
+          (request.auth.uid in resource.data.memberUids &&
+            (isRoutineMemberUpdate() || isSelfLeave() || isOwnerAddingMember() ||
+              isAdminRemoval() || isMetadataUpdate() || isAdminListChange())) ||
+          (isSingleAddition() && newlyAddedUid() == request.auth.uid)
+        );
+      allow create: if signedIn() &&
+        request.resource.data.memberUids == [request.auth.uid];
+
+      match /messages/{messageId} {
+        allow read, create: if signedIn() &&
+          request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberUids;
+        allow delete: if signedIn() &&
+          resource.data.sender == request.auth.token.email;
+        allow update: if signedIn() &&
+          (resource.data.sender == request.auth.token.email ||
+            reactionsOnly() || deletedForSelfOnly());
+      }
+    }
+
+    match /statuses/{statusId} {
+      // "حالات" مؤقتة (صورة/فيديو/نص) شبيهة بتيليغرام، تختفي بعد 24 ساعة.
+      // ما في حذف تلقائي مجدول (يحتاج Cloud Functions المدفوعة) - العميل
+      // بيفلتر الحالات الأقدم من 24 ساعة وقت العرض بس، وبتظل موجودة
+      // بالقاعدة بشكل غير مرئي إلى أن يحذفها صاحبها بنفسه (أو تُحذف يدوياً
+      // لاحقاً). فقط صاحب الحالة يقدر يعدلها أو يحذفها، وأي مستخدم مسجل
+      // دخول فيه يسجل مشاهدته لها بإضافة uid تبعه لـ viewedBy بس (إضافة
+      // واحدة بكل عملية، بدون تعديل أي حقل تاني).
+      function isSingleView() {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewedBy']) &&
+          request.resource.data.viewedBy.size() == resource.data.viewedBy.size() + 1 &&
+          request.resource.data.viewedBy.hasAll(resource.data.viewedBy) &&
+          request.resource.data.viewedBy[request.resource.data.viewedBy.size() - 1] == request.auth.uid;
+      }
+
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if signedIn() &&
+        (resource.data.uid == request.auth.uid || isSingleView());
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+  }
+}

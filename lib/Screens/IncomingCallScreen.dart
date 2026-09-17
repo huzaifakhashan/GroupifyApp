@@ -7,6 +7,7 @@ class IncomingCallScreen extends StatelessWidget {
 final String callId;
 final String callerName;
 final String callerEmail;
+final bool isVideoCall;
 
 
 const IncomingCallScreen({
@@ -14,6 +15,7 @@ super.key,
 required this.callId,
 required this.callerName,
 required this.callerEmail,
+this.isVideoCall = false,
 });
 
 Future<void> _respond(BuildContext context, String status) async {
@@ -32,6 +34,7 @@ Future<void> _respond(BuildContext context, String status) async {
           callId: callId,
           userName: callerName,
           userEmail: callerEmail,
+          isVideoCall: isVideoCall,
         ),
       ),
     );
@@ -79,7 +82,7 @@ fontSize:25
 
 
 Text(
-"يتصل بك...",
+isVideoCall ? "مكالمة فيديو..." : "مكالمة صوتية...",
 style: TextStyle(
 color:Colors.white70
 ),
