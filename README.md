@@ -76,7 +76,7 @@ Messages and user data are stored in the cloud using Firebase Firestore, authent
 
 👉 [Download Groupify APK V1.0.0](https://github.com/huzaifakhashan/GroupifyApp/releases/tag/v1.0.0)
 
-👉 [Download Groupify APK v2.0.0](https://github.com/huzaifakhashan/GroupifyApp/releases/tag/v2.0.0)
+👉 [Download Groupify APK v2.0.0](https://github.com/huzaifakhashan/GroupifyApp/releases/tag/V2.0.0)
 
 ## 📄 License
 
