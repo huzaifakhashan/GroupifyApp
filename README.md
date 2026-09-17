@@ -9,11 +9,22 @@ Messages and user data are stored in the cloud using Firebase Firestore, authent
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="screenShots/image_1.jpg" width="250" style="padding: 20px;">
+  <img src="screenShots/image_1.jpg" width="250" style="margin: 20px;">
   <img src="screenShots/image_2.jpg" width="250" style="margin: 20px;">
   <img src="screenShots/image_3.jpg" width="250" style="margin: 20px;">
 </p>
 
+<p align="center">
+  <img src="screenShots/image_4.jpg" width="250" style="margin: 20px;">
+  <img src="screenShots/image_5.jpg" width="250" style="margin: 20px;">
+  <img src="screenShots/image_6.jpg" width="250" style="margin: 20px;">
+</p>
+
+<p align="center">
+  <img src="screenShots/image_7.jpg" width="250" style="margin: 20px;">
+  <img src="screenShots/image_8.jpg" width="250" style="margin: 20px;">
+  <img src="screenShots/image_9.jpg" width="250" style="margin: 20px;">
+</p>
 
 ## ✨ Features
 
