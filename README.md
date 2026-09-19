@@ -1,30 +1,15 @@
 # 📱 Groupify App
 
+🌐 **Live Website:**
+
+  http://groupify.gt.tc
+
 A real-time chat and instant messaging application built with Flutter and Firebase.
 
 Groupify is a modern chat application that allows users to create accounts and communicate with other users in real time. Users can register and use their accounts to send and receive messages, including accounts created with non-real or anonymous profile information.
 
 Messages and user data are stored in the cloud using Firebase Firestore, authentication is handled through Firebase Authentication, and real-time push notifications are provided using Firebase Cloud Messaging. The application also supports image and file sharing through Firebase Storage.
 
-## 📸 Screenshots
-
-<p align="center">
-  <img src="screenShots/image_1.jpg" width="250" style="margin: 20px;">
-  <img src="screenShots/image_2.jpg" width="250" style="margin: 20px;">
-  <img src="screenShots/image_3.jpg" width="250" style="margin: 20px;">
-</p>
-
-<p align="center">
-  <img src="screenShots/image_4.jpg" width="250" style="margin: 20px;">
-  <img src="screenShots/image_5.jpg" width="250" style="margin: 20px;">
-  <img src="screenShots/image_6.jpg" width="250" style="margin: 20px;">
-</p>
-
-<p align="center">
-  <img src="screenShots/image_7.jpg" width="250" style="margin: 20px;">
-  <img src="screenShots/image_8.jpg" width="250" style="margin: 20px;">
-  <img src="screenShots/image_9.jpg" width="250" style="margin: 20px;">
-</p>
 
 ## ✨ Features
 
@@ -91,9 +76,12 @@ Messages and user data are stored in the cloud using Firebase Firestore, authent
    flutter run
    ```
 
+
 ## 📥 Download the App
 
-👉 [Download Groupify APK](https://github.com/huzaifakhashan/GroupifyApp/releases/tag/v1.0.0)
+👉 [Download Groupify APK V1.0.0](https://github.com/huzaifakhashan/GroupifyApp/releases/tag/v1.0.0)
+
+👉 [Download Groupify APK v2.0.0](https://github.com/huzaifakhashan/GroupifyApp/releases/tag/V2.0.0)
 
 ## 📄 License
 
