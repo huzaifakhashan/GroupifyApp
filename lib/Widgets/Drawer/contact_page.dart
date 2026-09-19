@@ -26,9 +26,9 @@ class ContactPage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            item(Icons.email, "البريد الإلكتروني", "groupify@gmail.com"),
-            item(Icons.phone, "الهاتف", "+964 784 588 4502"),
-            item(Icons.language, "الموقع الإلكتروني", "www.groupify.com"),
+            item(Icons.email, "البريد الإلكتروني", "huzaifa.khashan@gmail.com"),
+            item(Icons.phone, "رقم الهاتف", "+963 981 787 496"),
+            item(Icons.language, "الموقع الإلكتروني", "http://groupify.gt.tc"),
           ],
         ),
       ),
