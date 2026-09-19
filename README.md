@@ -1,5 +1,9 @@
 # 📱 Groupify App
 
+🌐 **Live Website:**
+
+  http://groupify.gt.tc
+
 A real-time chat and instant messaging application built with Flutter and Firebase.
 
 Groupify is a modern chat application that allows users to create accounts and communicate with other users in real time. Users can register and use their accounts to send and receive messages, including accounts created with non-real or anonymous profile information.
@@ -71,9 +75,7 @@ Messages and user data are stored in the cloud using Firebase Firestore, authent
    ```bash
    flutter run
    ```
-🌐 **Live Website:**
 
-http://groupify.gt.tc
 
 ## 📥 Download the App
 
