@@ -71,6 +71,9 @@ Messages and user data are stored in the cloud using Firebase Firestore, authent
    ```bash
    flutter run
    ```
+🌐 **Live Website:**
+
+http://groupify.gt.tc
 
 ## 📥 Download the App
 
